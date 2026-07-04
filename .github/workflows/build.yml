@@ -1,4 +1,4 @@
-name: Build and publish cinpy
+name: Build and publish
 
 on:
   push:
@@ -17,20 +17,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install libclang (Linux)
+      - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get install -y libclang-dev libffi-dev
 
-      - name: Install libclang (macOS)
+      - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
         run: brew install llvm libffi
 
-      - name: Set up MSYS2 (Windows)
+      - name: Install dependencies (Windows)
         if: runner.os == 'Windows'
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: UCRT64
-          install: mingw-w64-ucrt-x86_64-libffi
+        run: choco install llvm -y
 
       - uses: actions/setup-python@v5
         with:
@@ -43,9 +40,11 @@ jobs:
         run: python -m cibuildwheel --output-dir dist
         env:
           CIBW_BUILD: "cp312-* cp313-*"
-          CIBW_SKIP: "*-musllinux*"
-          CIBW_BEFORE_BUILD_LINUX: "yum install -y llvm-devel libffi-devel || apt-get install -y libclang-dev libffi-dev"
+          CIBW_SKIP: "*-musllinux* *-win32*"
+          CIBW_BEFORE_BUILD_LINUX: "apt-get install -y libclang-dev libffi-dev || yum install -y clang-devel libffi-devel"
           CIBW_BEFORE_BUILD_MACOS: "brew install llvm libffi"
+          CIBW_BEFORE_BUILD_WINDOWS: "choco install llvm -y"
+          CIBW_BUILD_VERBOSITY: "1"
 
       - uses: actions/upload-artifact@v4
         with:
